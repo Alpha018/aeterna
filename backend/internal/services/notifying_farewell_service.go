@@ -17,8 +17,8 @@ func NewNotifyingFarewellService(base ports.FarewellServicePort, stream ports.Ev
 func (s *NotifyingFarewellService) Create(userID, messageID, recipientEmail, subject, content string, delayMinutes int) (models.FarewellLetter, error) {
 	letter, err := s.base.Create(userID, messageID, recipientEmail, subject, content, delayMinutes)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, "farewell", letter.ID, "created")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, "message", messageID, "farewell_created")
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellCreated, "farewell", letter.ID, "created")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellCreated, "message", messageID, "farewell_created")
 	}
 	return letter, err
 }
@@ -30,8 +30,8 @@ func (s *NotifyingFarewellService) List(userID, messageID string) ([]models.Fare
 func (s *NotifyingFarewellService) Update(userID, messageID, id, recipientEmail, subject, content string, delayMinutes int) (models.FarewellLetter, error) {
 	letter, err := s.base.Update(userID, messageID, id, recipientEmail, subject, content, delayMinutes)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, "farewell", letter.ID, "updated")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, "message", messageID, "farewell_updated")
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellUpdated, "farewell", letter.ID, "updated")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellUpdated, "message", messageID, "farewell_updated")
 	}
 	return letter, err
 }
@@ -39,8 +39,8 @@ func (s *NotifyingFarewellService) Update(userID, messageID, id, recipientEmail,
 func (s *NotifyingFarewellService) Delete(userID, messageID, id string) error {
 	err := s.base.Delete(userID, messageID, id)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, "farewell", id, "deleted")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, "message", messageID, "farewell_deleted")
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellDeleted, "farewell", id, "deleted")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellDeleted, "message", messageID, "farewell_deleted")
 	}
 	return err
 }

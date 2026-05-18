@@ -25,7 +25,7 @@ func (s *NotifyingSettingsService) GetByHeartbeatToken(token string) (models.Set
 func (s *NotifyingSettingsService) Save(userID string, req models.Settings) error {
 	err := s.base.Save(userID, req)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeSettingsChanged, "settings", "", "saved")
+		s.notifier.publish(userID, ports.EventTypeSettingsChanged, ports.EventCodeSettingsSaved, "settings", "", "saved")
 	}
 	return err
 }

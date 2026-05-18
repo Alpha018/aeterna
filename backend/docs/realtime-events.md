@@ -109,7 +109,13 @@ Initial and keepalive events:
 ```json
 {
   "type": "messages.changed",
+  "code": "message.heartbeat",
   "at": "2026-05-17T05:10:00Z",
+  "data": {
+    "resource": "message",
+    "entity_id": "msg-id-123",
+    "reason": "heartbeat"
+  },
   "resource": "message",
   "entity_id": "msg-id-123",
   "reason": "heartbeat"
@@ -119,10 +125,16 @@ Initial and keepalive events:
 Fields:
 
 - `type` (required): logical event type.
+- `code` (recommended): stable machine-readable code for cross-platform notification rules.
 - `at` (required): UTC timestamp.
+- `data` (recommended): normalized payload envelope (`resource`, `entity_id`, `reason`).
 - `resource` (optional): affected resource class.
 - `entity_id` (optional): affected entity id when available.
 - `reason` (optional): mutation reason label.
+
+Compatibility note:
+- `resource`, `entity_id`, and `reason` remain at top-level for backward compatibility.
+- New clients should prefer `code` + `data`.
 
 ## Event Types
 
@@ -138,6 +150,41 @@ Domain refresh events:
 - `farewells.changed`
 - `settings.changed`
 - `webhooks.changed`
+
+## Event Codes
+
+Stream:
+- `stream.ready`
+- `stream.ping`
+
+Messages:
+- `message.created`
+- `message.updated`
+- `message.deleted`
+- `message.heartbeat`
+- `message.bulk_heartbeat`
+- `message.attachment_uploaded`
+- `message.attachment_deleted`
+- `message.farewell_created`
+- `message.farewell_updated`
+- `message.farewell_deleted`
+
+Attachments:
+- `attachment.uploaded`
+- `attachment.deleted`
+
+Farewells:
+- `farewell.created`
+- `farewell.updated`
+- `farewell.deleted`
+- `farewell_attachment.uploaded`
+- `farewell_attachment.deleted`
+
+Settings/Webhooks:
+- `settings.saved`
+- `webhook.created`
+- `webhook.updated`
+- `webhook.deleted`
 
 ## Where Events Are Emitted
 

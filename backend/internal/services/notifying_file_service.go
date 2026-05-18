@@ -17,8 +17,8 @@ func NewNotifyingFileService(base ports.FileServicePort, stream ports.EventStrea
 func (s *NotifyingFileService) Upload(userID, messageID, filename, mimeType string, data []byte) (models.Attachment, error) {
 	attachment, err := s.base.Upload(userID, messageID, filename, mimeType, data)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeAttachmentsChanged, "attachment", attachment.ID, "uploaded")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, "message", messageID, "attachment_uploaded")
+		s.notifier.publish(userID, ports.EventTypeAttachmentsChanged, ports.EventCodeAttachmentUploaded, "attachment", attachment.ID, "uploaded")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageAttachmentUploaded, "message", messageID, "attachment_uploaded")
 	}
 	return attachment, err
 }
@@ -26,8 +26,8 @@ func (s *NotifyingFileService) Upload(userID, messageID, filename, mimeType stri
 func (s *NotifyingFileService) Delete(userID, attachmentID string) error {
 	err := s.base.Delete(userID, attachmentID)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeAttachmentsChanged, "attachment", attachmentID, "deleted")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, "message", "", "attachment_deleted")
+		s.notifier.publish(userID, ports.EventTypeAttachmentsChanged, ports.EventCodeAttachmentDeleted, "attachment", attachmentID, "deleted")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageAttachmentDeleted, "message", "", "attachment_deleted")
 	}
 	return err
 }
@@ -51,7 +51,7 @@ func (s *NotifyingFileService) CountByMessageID(userID, messageID string) (int64
 func (s *NotifyingFileService) UploadFarewellAttachment(userID, letterID, filename, mimeType string, data []byte) (models.FarewellAttachment, error) {
 	attachment, err := s.base.UploadFarewellAttachment(userID, letterID, filename, mimeType, data)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, "farewell_attachment", attachment.ID, "attachment_uploaded")
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellAttachmentUploaded, "farewell_attachment", attachment.ID, "attachment_uploaded")
 	}
 	return attachment, err
 }
@@ -67,7 +67,7 @@ func (s *NotifyingFileService) CountFarewellAttachmentsByLetterID(userID, letter
 func (s *NotifyingFileService) DeleteFarewellAttachment(userID, attachmentID string) error {
 	err := s.base.DeleteFarewellAttachment(userID, attachmentID)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, "farewell_attachment", attachmentID, "attachment_deleted")
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellAttachmentDeleted, "farewell_attachment", attachmentID, "attachment_deleted")
 	}
 	return err
 }

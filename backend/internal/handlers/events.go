@@ -52,7 +52,9 @@ func (h *EventsHandlers) Stream(c *fiber.Ctx) error {
 
 		_ = writeSSEEvent(w, ports.RealtimeEvent{
 			Type:   ports.EventTypeReady,
+			Code:   ports.EventCodeStreamReady,
 			At:     time.Now().UTC(),
+			Data:   map[string]string{"reason": "connected"},
 			Reason: "connected",
 		})
 
@@ -73,6 +75,7 @@ func (h *EventsHandlers) Stream(c *fiber.Ctx) error {
 			case <-heartbeat.C:
 				if err := writeSSEEvent(w, ports.RealtimeEvent{
 					Type: ports.EventTypePing,
+					Code: ports.EventCodeStreamPing,
 					At:   time.Now().UTC(),
 				}); err != nil {
 					return

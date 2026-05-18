@@ -27,7 +27,7 @@ func (s *NotifyingWebhookStore) ListEnabledForUser(userID string) ([]models.Webh
 func (s *NotifyingWebhookStore) Create(userID string, item models.Webhook) (models.Webhook, error) {
 	created, err := s.base.Create(userID, item)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, "webhook", fmt.Sprint(created.ID), "created")
+		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, ports.EventCodeWebhookCreated, "webhook", fmt.Sprint(created.ID), "created")
 	}
 	return created, err
 }
@@ -35,7 +35,7 @@ func (s *NotifyingWebhookStore) Create(userID string, item models.Webhook) (mode
 func (s *NotifyingWebhookStore) Update(userID, id string, input models.Webhook) (models.Webhook, error) {
 	updated, err := s.base.Update(userID, id, input)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, "webhook", fmt.Sprint(updated.ID), "updated")
+		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, ports.EventCodeWebhookUpdated, "webhook", fmt.Sprint(updated.ID), "updated")
 	}
 	return updated, err
 }
@@ -43,7 +43,7 @@ func (s *NotifyingWebhookStore) Update(userID, id string, input models.Webhook) 
 func (s *NotifyingWebhookStore) Delete(userID, id string) error {
 	err := s.base.Delete(userID, id)
 	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, "webhook", id, "deleted")
+		s.notifier.publish(userID, ports.EventTypeWebhooksChanged, ports.EventCodeWebhookDeleted, "webhook", id, "deleted")
 	}
 	return err
 }
