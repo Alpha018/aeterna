@@ -74,7 +74,6 @@ func (h *FarewellHandlers) Create(c *fiber.Ctx) error {
 	if err != nil {
 		return writeError(c, err)
 	}
-
 	return c.Status(fiber.StatusCreated).JSON(letter)
 }
 
@@ -103,7 +102,6 @@ func (h *FarewellHandlers) Update(c *fiber.Ctx) error {
 	if err != nil {
 		return writeError(c, err)
 	}
-
 	return c.JSON(letter)
 }
 
@@ -118,7 +116,6 @@ func (h *FarewellHandlers) Delete(c *fiber.Ctx) error {
 	if err := h.farewell.Delete(userID, messageID, letterID); err != nil {
 		return writeError(c, err)
 	}
-
 	return c.JSON(fiber.Map{"success": true, "message": "Farewell letter deleted"})
 }
 
@@ -184,7 +181,6 @@ func (h *FarewellHandlers) UploadAttachment(c *fiber.Ctx) error {
 	if err != nil {
 		return writeError(c, err)
 	}
-
 	return c.JSON(fiber.Map{"success": true, "attachment": attachment})
 }
 
@@ -213,6 +209,5 @@ func (h *FarewellHandlers) DeleteAttachment(c *fiber.Ctx) error {
 	if err := h.files.DeleteFarewellAttachment(userID, attachmentID); err != nil {
 		return writeError(c, err)
 	}
-
 	return c.JSON(fiber.Map{"success": true, "message": "Farewell attachment deleted"})
 }
