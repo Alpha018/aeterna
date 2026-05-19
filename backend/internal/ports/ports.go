@@ -56,6 +56,11 @@ type FarewellServicePort interface {
 	CancelPendingByMessageID(userID, messageID string) (int64, error)
 }
 
+// FarewellDerivationPort covers background derivation of sanitized/rendered farewell content.
+type FarewellDerivationPort interface {
+	ProcessPending(batchSize int) (processed int, err error)
+}
+
 // SettingsServicePort covers per-user SMTP and heartbeat token configuration.
 type SettingsServicePort interface {
 	Get(userID string) (models.Settings, error)

@@ -97,12 +97,13 @@ func main() {
 
 	database.DB.Exec("UPDATE messages SET encrypted_content = '' WHERE encrypted_content IS NULL;")
 	database.DB.Exec("UPDATE settings SET webhook_enabled = 0 WHERE webhook_enabled IS NULL;")
+	database.DB.Exec("UPDATE farewell_letters SET encrypted_content_raw = encrypted_content WHERE encrypted_content_raw IS NULL OR encrypted_content_raw = '';")
+	database.DB.Exec("UPDATE farewell_letters SET encrypted_rendered_html = '' WHERE encrypted_rendered_html IS NULL;")
+	database.DB.Exec("UPDATE farewell_letters SET derivatives_pending = 1 WHERE derivatives_pending IS NULL;")
 
 	if err := services.EnsureUploadsDir(cfg.Database.Path); err != nil {
 		log.Fatal("Failed to create uploads directory: ", err)
 	}
-
-	handlers.SetIsProduction(cfg)
 
 	// --- Composition root: wire services ---
 	authSvc := services.NewAuthService(cfg)
@@ -114,6 +115,7 @@ func main() {
 	webhookStore := services.NewWebhookStore(cfg)
 	userAdminSvc := services.NewUserAdminService(cfg)
 	eventStreamSvc := services.NewEventStreamService()
+	farewellDerivationSvc := services.NewFarewellDerivationService()
 
 	// Decorate mutating services with event emission.
 	messageSvcWithEvents := services.NewNotifyingMessageService(messageSvc, eventStreamSvc)
@@ -134,12 +136,13 @@ func main() {
 	eventsH := handlers.NewEventsHandlers(eventStreamSvc)
 
 	// --- Wire worker ---
-	w := worker.New(settingsSvc, webhookStore, fileSvc, cfg)
+	w := worker.New(settingsSvc, webhookStore, fileSvc, farewellDerivationSvc, cfg)
 
 	app := fiber.New(fiber.Config{
 		BodyLimit: 25 * 1024 * 1024,
 	})
 
+	app.Use(handlers.AttachRuntimeFlags(cfg.IsProduction()))
 	app.Use(requestid.New())
 	app.Use(logger.New(logger.Config{
 		Format: "{\"time\":\"${time}\",\"ip\":\"${ip}\",\"status\":${status},\"method\":\"${method}\",\"path\":\"${path}\",\"latency\":\"${latency}\",\"req_id\":\"${locals:requestid}\"}\n",
