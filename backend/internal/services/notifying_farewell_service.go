@@ -44,3 +44,21 @@ func (s *NotifyingFarewellService) Delete(userID, messageID, id string) error {
 	}
 	return err
 }
+
+func (s *NotifyingFarewellService) CancelPending(userID, messageID, id string) error {
+	err := s.base.CancelPending(userID, messageID, id)
+	if err == nil {
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellDeleted, "farewell", id, "canceled")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellDeleted, "message", messageID, "farewell_canceled")
+	}
+	return err
+}
+
+func (s *NotifyingFarewellService) CancelPendingByMessageID(userID, messageID string) (int64, error) {
+	count, err := s.base.CancelPendingByMessageID(userID, messageID)
+	if err == nil {
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellDeleted, "message", messageID, "farewells_canceled")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellDeleted, "message", messageID, "farewells_canceled")
+	}
+	return count, err
+}
