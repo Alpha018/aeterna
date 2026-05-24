@@ -66,6 +66,7 @@ func main() {
 
 	if err := database.DB.AutoMigrate(
 		&models.User{},
+		&models.RefreshSession{},
 		&models.Message{},
 		&models.MessageReminder{},
 		&models.Settings{},
@@ -205,6 +206,7 @@ func main() {
 	apiV2.Post("/auth/login", middleware.AuthRateLimiter, authH.LoginV2)
 	apiV2.Post("/auth/reset-password", middleware.AuthRateLimiter, authH.ResetMasterPasswordV2)
 	apiV2.Get("/auth/session", authH.SessionStatusV2)
+	apiV2.Post("/auth/refresh", middleware.AuthRateLimiter, authH.RefreshV2)
 	apiV2.Post("/auth/logout", authH.LogoutV2)
 
 	// Protected routes

@@ -13,6 +13,9 @@ type AuthServicePort interface {
 	RegisterAdditionalUser(email, password, ownerEmail string) (recoveryKey string, user models.User, err error)
 	Login(email, password string) (models.User, error)
 	IssueSessionToken(userID string) (string, time.Time, error)
+	IssueSessionPair(userID string) (accessToken string, accessExp time.Time, refreshToken string, refreshExp time.Time, err error)
+	RefreshSessionPair(refreshToken string) (userID, accessToken string, accessExp time.Time, nextRefreshToken string, nextRefreshExp time.Time, err error)
+	RevokeRefreshToken(refreshToken string) error
 	VerifySessionToken(token string) (userID string, err error)
 	ResetPasswordWithRecovery(email, recoveryKey, newPassword string) (newRecoveryKey string, err error)
 	AdditionalRegistrationOpen() (bool, error)
