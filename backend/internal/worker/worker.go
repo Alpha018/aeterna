@@ -210,7 +210,7 @@ func (w *Worker) triggerSwitch(msg models.Message) {
 		}
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	msg.Status = models.StatusTriggered
 	msg.TriggeredAt = &now
 	if err := database.ForTenant(msg.UserID).Save(&msg).Error; err != nil {
@@ -336,7 +336,7 @@ func (w *Worker) sendFarewellLetter(letter models.FarewellLetter) {
 		return
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if err := database.ForTenant(letter.UserID).Model(&letter).Updates(map[string]any{
 		"status":  models.FarewellStatusSent,
 		"sent_at": now,

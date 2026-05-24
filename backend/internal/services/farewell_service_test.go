@@ -85,6 +85,36 @@ func TestFarewellCreate_PersistsZeroDelay(t *testing.T) {
 	}
 }
 
+func TestFarewellCreate_RejectsTriggeredMessage(t *testing.T) {
+	db := setupTestDB(t)
+	msg := models.Message{
+		ID:              "m-triggered-create",
+		UserID:          "u-triggered-create",
+		Content:         "encrypted",
+		KeyFragment:     "v1",
+		ManagementToken: "tok",
+		RecipientEmail:  "owner@example.com",
+		TriggerDuration: 60,
+		LastSeen:        time.Now(),
+		Status:          models.StatusTriggered,
+	}
+	if err := db.Create(&msg).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := (FarewellService{}).Create(
+		msg.UserID,
+		msg.ID,
+		"recipient@example.com",
+		"Subject",
+		"content",
+		10,
+	)
+	if err == nil || !strings.Contains(err.Error(), "Cannot add farewell letters after the switch has triggered") {
+		t.Fatalf("expected triggered create rejection, got %v", err)
+	}
+}
+
 func TestFarewellUpdate_MarksDerivativesPending(t *testing.T) {
 	db := setupTestDB(t)
 	initTestKeyManager(t)
@@ -145,94 +175,6 @@ func TestFarewellUpdate_MarksDerivativesPending(t *testing.T) {
 	}
 	if !stored.DerivativesPending {
 		t.Fatalf("expected stored derivatives_pending=true after update")
-	}
-}
-
-func TestFarewellCreate_SanitizesStoredContentAndPreservesRaw(t *testing.T) {
-	db := setupTestDB(t)
-	initTestKeyManager(t)
-
-	msg := models.Message{
-		ID:              "m-markdown-word-count",
-		UserID:          "u-markdown-word-count",
-		Content:         "encrypted",
-		KeyFragment:     "v1",
-		ManagementToken: "tok",
-		RecipientEmail:  "owner@example.com",
-		TriggerDuration: 60,
-		LastSeen:        time.Now(),
-		Status:          models.StatusActive,
-	}
-	if err := db.Create(&msg).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	content := "# Title\n\n<script>alert('x')</script>\n\nVisit [Aeterna](javascript:alert(1))"
-	letter, err := (FarewellService{}).Create(
-		msg.UserID,
-		msg.ID,
-		"recipient@example.com",
-		"Subject",
-		content,
-		0,
-	)
-	if err != nil {
-		t.Fatalf("Create failed: %v", err)
-	}
-
-	if letter.WordCount != 0 {
-		t.Fatalf("expected returned word_count 0 before background derivation, got %d", letter.WordCount)
-	}
-	if strings.Contains(strings.ToLower(letter.Content), "<script") {
-		t.Fatalf("expected sanitized content without raw html, got: %s", letter.Content)
-	}
-	if strings.Contains(strings.ToLower(letter.Content), "javascript:") {
-		t.Fatalf("expected sanitized content without javascript links, got: %s", letter.Content)
-	}
-
-	var stored models.FarewellLetter
-	if err := db.First(&stored, "id = ?", letter.ID).Error; err != nil {
-		t.Fatalf("failed to load stored farewell letter: %v", err)
-	}
-	if strings.TrimSpace(stored.RawContent) == "" {
-		t.Fatal("expected raw encrypted content to be persisted")
-	}
-	rawDecrypted, err := (CryptoService{}).Decrypt(stored.RawContent)
-	if err != nil {
-		t.Fatalf("failed to decrypt raw content: %v", err)
-	}
-	if rawDecrypted != content {
-		t.Fatalf("expected raw content to match input, got %q", rawDecrypted)
-	}
-}
-
-func TestFarewellCreate_RejectsTriggeredMessage(t *testing.T) {
-	db := setupTestDB(t)
-	msg := models.Message{
-		ID:              "m-triggered-create",
-		UserID:          "u-triggered-create",
-		Content:         "encrypted",
-		KeyFragment:     "v1",
-		ManagementToken: "tok",
-		RecipientEmail:  "owner@example.com",
-		TriggerDuration: 60,
-		LastSeen:        time.Now(),
-		Status:          models.StatusTriggered,
-	}
-	if err := db.Create(&msg).Error; err != nil {
-		t.Fatal(err)
-	}
-
-	_, err := (FarewellService{}).Create(
-		msg.UserID,
-		msg.ID,
-		"recipient@example.com",
-		"Subject",
-		"content",
-		10,
-	)
-	if err == nil || !strings.Contains(err.Error(), "Cannot add farewell letters after the switch has triggered") {
-		t.Fatalf("expected triggered create rejection, got %v", err)
 	}
 }
 
@@ -384,6 +326,64 @@ func TestFarewellCancelPending_RemovesOnlyPendingLetters(t *testing.T) {
 	db.Model(&models.FarewellLetter{}).Where("message_id = ? AND status = ?", msg.ID, models.FarewellStatusSent).Count(&sentCount)
 	if sentCount != 1 {
 		t.Fatalf("expected sent letter to remain, got %d", sentCount)
+	}
+}
+
+func TestFarewellCreate_SanitizesStoredContentAndPreservesRaw(t *testing.T) {
+	db := setupTestDB(t)
+	initTestKeyManager(t)
+
+	msg := models.Message{
+		ID:              "m-markdown-word-count",
+		UserID:          "u-markdown-word-count",
+		Content:         "encrypted",
+		KeyFragment:     "v1",
+		ManagementToken: "tok",
+		RecipientEmail:  "owner@example.com",
+		TriggerDuration: 60,
+		LastSeen:        time.Now(),
+		Status:          models.StatusActive,
+	}
+	if err := db.Create(&msg).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	content := "# Title\n\n<script>alert('x')</script>\n\nVisit [Aeterna](javascript:alert(1))"
+	letter, err := (FarewellService{}).Create(
+		msg.UserID,
+		msg.ID,
+		"recipient@example.com",
+		"Subject",
+		content,
+		0,
+	)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	if letter.WordCount != 0 {
+		t.Fatalf("expected returned word_count 0 before background derivation, got %d", letter.WordCount)
+	}
+	if strings.Contains(strings.ToLower(letter.Content), "<script") {
+		t.Fatalf("expected sanitized content without raw html, got: %s", letter.Content)
+	}
+	if strings.Contains(strings.ToLower(letter.Content), "javascript:") {
+		t.Fatalf("expected sanitized content without javascript links, got: %s", letter.Content)
+	}
+
+	var stored models.FarewellLetter
+	if err := db.First(&stored, "id = ?", letter.ID).Error; err != nil {
+		t.Fatalf("failed to load stored farewell letter: %v", err)
+	}
+	if strings.TrimSpace(stored.RawContent) == "" {
+		t.Fatal("expected raw encrypted content to be persisted")
+	}
+	rawDecrypted, err := (CryptoService{}).Decrypt(stored.RawContent)
+	if err != nil {
+		t.Fatalf("failed to decrypt raw content: %v", err)
+	}
+	if rawDecrypted != content {
+		t.Fatalf("expected raw content to match input, got %q", rawDecrypted)
 	}
 }
 
