@@ -14,6 +14,13 @@ func NewNotifyingMessageService(base ports.MessageServicePort, stream ports.Even
 	return &NotifyingMessageService{base: base, notifier: newEventNotifier(stream)}
 }
 
+func (s *NotifyingMessageService) WithOriginSession(sessionKey string) ports.MessageServicePort {
+	return &NotifyingMessageService{
+		base:     s.base,
+		notifier: s.notifier.withOriginSession(sessionKey),
+	}
+}
+
 func (s *NotifyingMessageService) Create(userID, content string, recipientEmails []string, triggerDuration int, reminders []int) (models.Message, error) {
 	msg, err := s.base.Create(userID, content, recipientEmails, triggerDuration, reminders)
 	if err == nil {

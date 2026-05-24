@@ -40,17 +40,18 @@ const (
 
 // RealtimeEvent is delivered to authenticated SSE clients.
 type RealtimeEvent struct {
-	Type     string            `json:"type"`
-	Code     string            `json:"code,omitempty"`
-	At       time.Time         `json:"at"`
-	Data     map[string]string `json:"data,omitempty"`
-	Resource string            `json:"resource,omitempty"`
-	EntityID string            `json:"entity_id,omitempty"`
-	Reason   string            `json:"reason,omitempty"`
+	Type             string            `json:"type"`
+	Code             string            `json:"code,omitempty"`
+	At               time.Time         `json:"at"`
+	Data             map[string]string `json:"data,omitempty"`
+	Resource         string            `json:"resource,omitempty"`
+	EntityID         string            `json:"entity_id,omitempty"`
+	Reason           string            `json:"reason,omitempty"`
+	OriginSessionKey string            `json:"-"`
 }
 
 // EventStreamPort exposes user-scoped pub/sub for real-time refresh hints.
 type EventStreamPort interface {
-	Subscribe(userID, clientID string) (<-chan RealtimeEvent, <-chan struct{}, func(), error)
+	Subscribe(userID, clientID, sessionKey string) (<-chan RealtimeEvent, <-chan struct{}, func(), error)
 	Publish(userID string, event RealtimeEvent)
 }

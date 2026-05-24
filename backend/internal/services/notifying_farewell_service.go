@@ -14,6 +14,13 @@ func NewNotifyingFarewellService(base ports.FarewellServicePort, stream ports.Ev
 	return &NotifyingFarewellService{base: base, notifier: newEventNotifier(stream)}
 }
 
+func (s *NotifyingFarewellService) WithOriginSession(sessionKey string) ports.FarewellServicePort {
+	return &NotifyingFarewellService{
+		base:     s.base,
+		notifier: s.notifier.withOriginSession(sessionKey),
+	}
+}
+
 func (s *NotifyingFarewellService) Create(userID, messageID, recipientEmail, subject, content string, delayMinutes int) (models.FarewellLetter, error) {
 	letter, err := s.base.Create(userID, messageID, recipientEmail, subject, content, delayMinutes)
 	if err == nil {
@@ -56,8 +63,8 @@ func (s *NotifyingFarewellService) CancelPending(userID, messageID, id string) e
 
 func (s *NotifyingFarewellService) CancelPendingByMessageID(userID, messageID string) (int64, error) {
 	count, err := s.base.CancelPendingByMessageID(userID, messageID)
-	if err == nil {
-		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellDeleted, "message", messageID, "farewells_canceled")
+	if err == nil && count > 0 {
+		s.notifier.publish(userID, ports.EventTypeFarewellsChanged, ports.EventCodeFarewellDeleted, "farewell", "", "canceled_all")
 		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageFarewellDeleted, "message", messageID, "farewells_canceled")
 	}
 	return count, err

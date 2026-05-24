@@ -29,12 +29,13 @@ func (h *EventsHandlers) Stream(c *fiber.Ctx) error {
 	if err != nil {
 		return writeError(c, err)
 	}
+	sessionKey := currentSessionKey(c)
 	clientID := strings.TrimSpace(c.Query("client_id"))
 	if clientID == "" {
 		clientID = uuid.NewString()
 	}
 
-	ch, done, cancel, err := h.stream.Subscribe(userID, clientID)
+	ch, done, cancel, err := h.stream.Subscribe(userID, clientID, sessionKey)
 	if err != nil {
 		return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 			"error": err.Error(),

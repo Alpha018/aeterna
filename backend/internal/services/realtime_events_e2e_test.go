@@ -42,13 +42,13 @@ func TestRealtimeEventsE2E_HeartbeatBroadcastsToAllDevicesOfSameUser(t *testing.
 	stream := NewEventStreamService()
 	svc := NewNotifyingMessageService(realtimeE2EMessageService{}, stream)
 
-	webCh, _, webCancel, err := stream.Subscribe("u1", "web")
+	webCh, _, webCancel, err := stream.Subscribe("u1", "web", "sess-web")
 	if err != nil {
 		t.Fatalf("subscribe web failed: %v", err)
 	}
 	defer webCancel()
 
-	androidCh, _, androidCancel, err := stream.Subscribe("u1", "android")
+	androidCh, _, androidCancel, err := stream.Subscribe("u1", "android", "sess-android")
 	if err != nil {
 		t.Fatalf("subscribe android failed: %v", err)
 	}
@@ -66,13 +66,13 @@ func TestRealtimeEventsE2E_HeartbeatDoesNotLeakAcrossUsers(t *testing.T) {
 	stream := NewEventStreamService()
 	svc := NewNotifyingMessageService(realtimeE2EMessageService{}, stream)
 
-	user1Ch, _, cancel1, err := stream.Subscribe("u1", "web")
+	user1Ch, _, cancel1, err := stream.Subscribe("u1", "web", "sess-u1")
 	if err != nil {
 		t.Fatalf("subscribe u1 failed: %v", err)
 	}
 	defer cancel1()
 
-	user2Ch, _, cancel2, err := stream.Subscribe("u2", "android")
+	user2Ch, _, cancel2, err := stream.Subscribe("u2", "android", "sess-u2")
 	if err != nil {
 		t.Fatalf("subscribe u2 failed: %v", err)
 	}
@@ -84,6 +84,37 @@ func TestRealtimeEventsE2E_HeartbeatDoesNotLeakAcrossUsers(t *testing.T) {
 
 	waitForRealtimeEventType(t, user1Ch, ports.EventTypeMessagesChanged, 2*time.Second)
 	assertNoRealtimeEventType(t, user2Ch, ports.EventTypeMessagesChanged, 500*time.Millisecond)
+}
+
+func TestRealtimeEventsE2E_HeartbeatSkipsOriginSession(t *testing.T) {
+	stream := NewEventStreamService()
+	base := NewNotifyingMessageService(realtimeE2EMessageService{}, stream)
+
+	scoped, ok := base.(interface {
+		WithOriginSession(sessionKey string) ports.MessageServicePort
+	})
+	if !ok {
+		t.Fatal("notifying message service is expected to support origin session scoping")
+	}
+
+	originCh, _, originCancel, err := stream.Subscribe("u1", "web", "sess-origin")
+	if err != nil {
+		t.Fatalf("subscribe origin failed: %v", err)
+	}
+	defer originCancel()
+
+	otherCh, _, otherCancel, err := stream.Subscribe("u1", "android", "sess-other")
+	if err != nil {
+		t.Fatalf("subscribe other failed: %v", err)
+	}
+	defer otherCancel()
+
+	if _, err := scoped.WithOriginSession("sess-origin").Heartbeat("u1", "msg-1"); err != nil {
+		t.Fatalf("heartbeat failed: %v", err)
+	}
+
+	assertNoRealtimeEventType(t, originCh, ports.EventTypeMessagesChanged, 500*time.Millisecond)
+	waitForRealtimeEventType(t, otherCh, ports.EventTypeMessagesChanged, 2*time.Second)
 }
 
 func waitForRealtimeEventType(t *testing.T, ch <-chan ports.RealtimeEvent, eventType string, timeout time.Duration) {

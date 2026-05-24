@@ -14,6 +14,13 @@ func NewNotifyingFileService(base ports.FileServicePort, stream ports.EventStrea
 	return &NotifyingFileService{base: base, notifier: newEventNotifier(stream)}
 }
 
+func (s *NotifyingFileService) WithOriginSession(sessionKey string) ports.FileServicePort {
+	return &NotifyingFileService{
+		base:     s.base,
+		notifier: s.notifier.withOriginSession(sessionKey),
+	}
+}
+
 func (s *NotifyingFileService) Upload(userID, messageID, filename, mimeType string, data []byte) (models.Attachment, error) {
 	attachment, err := s.base.Upload(userID, messageID, filename, mimeType, data)
 	if err == nil {
@@ -27,7 +34,7 @@ func (s *NotifyingFileService) Delete(userID, attachmentID string) error {
 	err := s.base.Delete(userID, attachmentID)
 	if err == nil {
 		s.notifier.publish(userID, ports.EventTypeAttachmentsChanged, ports.EventCodeAttachmentDeleted, "attachment", attachmentID, "deleted")
-		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageAttachmentDeleted, "message", "", "attachment_deleted")
+		s.notifier.publish(userID, ports.EventTypeMessagesChanged, ports.EventCodeMessageAttachmentDeleted, "attachment", attachmentID, "attachment_deleted")
 	}
 	return err
 }

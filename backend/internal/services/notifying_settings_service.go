@@ -14,6 +14,13 @@ func NewNotifyingSettingsService(base ports.SettingsServicePort, stream ports.Ev
 	return &NotifyingSettingsService{base: base, notifier: newEventNotifier(stream)}
 }
 
+func (s *NotifyingSettingsService) WithOriginSession(sessionKey string) ports.SettingsServicePort {
+	return &NotifyingSettingsService{
+		base:     s.base,
+		notifier: s.notifier.withOriginSession(sessionKey),
+	}
+}
+
 func (s *NotifyingSettingsService) Get(userID string) (models.Settings, error) {
 	return s.base.Get(userID)
 }

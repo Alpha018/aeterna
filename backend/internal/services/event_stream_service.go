@@ -17,12 +17,13 @@ const (
 )
 
 type eventClient struct {
-	id        string
-	userID    string
-	ch        chan ports.RealtimeEvent
-	done      chan struct{}
-	createdAt time.Time
-	stopOnce  sync.Once
+	id         string
+	userID     string
+	sessionKey string
+	ch         chan ports.RealtimeEvent
+	done       chan struct{}
+	createdAt  time.Time
+	stopOnce   sync.Once
 }
 
 func (c *eventClient) stop() {
@@ -50,7 +51,7 @@ func NewEventStreamService() *EventStreamService {
 	}
 }
 
-func (s *EventStreamService) Subscribe(userID, clientID string) (<-chan ports.RealtimeEvent, <-chan struct{}, func(), error) {
+func (s *EventStreamService) Subscribe(userID, clientID, sessionKey string) (<-chan ports.RealtimeEvent, <-chan struct{}, func(), error) {
 	if userID == "" {
 		return nil, nil, nil, fmt.Errorf("user id is required")
 	}
@@ -82,11 +83,12 @@ func (s *EventStreamService) Subscribe(userID, clientID string) (<-chan ports.Re
 	}
 
 	client := &eventClient{
-		id:        clientID,
-		userID:    userID,
-		ch:        make(chan ports.RealtimeEvent, s.clientBufferSize),
-		done:      make(chan struct{}),
-		createdAt: time.Now().UTC(),
+		id:         clientID,
+		userID:     userID,
+		sessionKey: sessionKey,
+		ch:         make(chan ports.RealtimeEvent, s.clientBufferSize),
+		done:       make(chan struct{}),
+		createdAt:  time.Now().UTC(),
 	}
 	userClients[clientID] = client
 	s.totalConnections++
@@ -116,6 +118,9 @@ func (s *EventStreamService) Publish(userID string, event ports.RealtimeEvent) {
 	}
 
 	for _, client := range targets {
+		if event.OriginSessionKey != "" && client.sessionKey == event.OriginSessionKey {
+			continue
+		}
 		select {
 		case client.ch <- event:
 		default:

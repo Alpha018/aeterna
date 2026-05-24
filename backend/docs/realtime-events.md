@@ -10,6 +10,8 @@ When one device changes state (for example heartbeat, message update, attachment
 
 Events are **refresh hints**, not source of truth.
 
+To reduce self-notifications, events emitted by an authenticated request are tagged with an internal `origin_session_key` and are not delivered back to SSE connections bound to the same session.
+
 ## High-Level Flow
 
 ```mermaid
@@ -70,7 +72,8 @@ sequenceDiagram
   W->>API: POST /api/heartbeat {id}
   API->>API: MessageService.Heartbeat()
   API->>HUB: Publish(U1, messages.changed)
-  HUB-->>W: event: messages.changed
+  Note over API,HUB: origin_session_key = hash(session token)
+  HUB--xW: skipped (same origin_session_key)
   HUB-->>A: event: messages.changed
   W->>API: GET /api/messages
   A->>API: GET /api/v2/messages
@@ -135,6 +138,7 @@ Fields:
 Compatibility note:
 - `resource`, `entity_id`, and `reason` remain at top-level for backward compatibility.
 - New clients should prefer `code` + `data`.
+- `origin_session_key` is internal-only and is not serialized in SSE JSON payloads.
 
 ## Event Types
 

@@ -16,6 +16,13 @@ func NewNotifyingWebhookStore(base ports.WebhookStorePort, stream ports.EventStr
 	return &NotifyingWebhookStore{base: base, notifier: newEventNotifier(stream)}
 }
 
+func (s *NotifyingWebhookStore) WithOriginSession(sessionKey string) ports.WebhookStorePort {
+	return &NotifyingWebhookStore{
+		base:     s.base,
+		notifier: s.notifier.withOriginSession(sessionKey),
+	}
+}
+
 func (s *NotifyingWebhookStore) List(userID string) ([]models.Webhook, error) {
 	return s.base.List(userID)
 }
